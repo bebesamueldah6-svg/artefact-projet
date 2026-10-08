@@ -19,6 +19,7 @@ fall *inside* body blocks are read.  Everything is validated afterwards
 
 from __future__ import annotations
 
+import itertools
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -100,7 +101,7 @@ def _blocks(page, page_no: int, words, edges, body_top, body_bottom) -> list[Blo
     if ys[-1] < body_bottom - 1:
         ys.append(body_bottom)
     blocks = []
-    for top, bottom in zip(ys, ys[1:]):
+    for top, bottom in itertools.pairwise(ys):
         bw = [w for w in words if top <= (w["top"] + w["bottom"]) / 2 < bottom]
         if bw:
             blocks.append(Block(page_no, top, bottom, bw))
@@ -225,7 +226,7 @@ def parse_pdf(pdf_path: Path) -> dict:
                 circ_id = ids[0]["text"] if ids else None
                 y_ref = ids[0]["top"] if ids else (b.top + b.bottom) / 2
                 region = ""
-                for r0, r1 in zip(region_edges, region_edges[1:]):
+                for r0, r1 in itertools.pairwise(region_edges):
                     if r0 <= y_ref < r1:
                         region = _region_label(page, r0, r1)
                         break
