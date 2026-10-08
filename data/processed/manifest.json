@@ -1,0 +1,43 @@
+{
+  "pdf_file": "EDAN_2025_RESULTAT_NATIONAL_DETAILS.pdf",
+  "pdf_sha256": "b36e9fcb7141512ddf465245ec6ef1404669af03d2028101cb7f065222b6a517",
+  "dataset_version": "b36e9fcb7141",
+  "validation": {
+    "circ_count_is_205": {
+      "passed": true,
+      "failures": []
+    },
+    "votants_eq_nuls_plus_exprimes": {
+      "passed": true,
+      "failures": []
+    },
+    "sum_votes_eq_exprimes_minus_blancs": {
+      "passed": true,
+      "failures": []
+    },
+    "vote_pct_recomputable": {
+      "passed": true,
+      "failures": []
+    },
+    "taux_participation_recomputable": {
+      "passed": true,
+      "failures": []
+    },
+    "exactly_one_elected_per_circ": {
+      "passed": true,
+      "failures": []
+    },
+    "elected_is_top_ranked": {
+      "passed": true,
+      "failures": []
+    },
+    "national_totals_match": {
+      "passed": true,
+      "failures": []
+    },
+    "no_empty_names": {
+      "passed": true,
+      "failures": []
+    }
+  }
+}

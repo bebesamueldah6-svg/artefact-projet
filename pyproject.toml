@@ -1,0 +1,33 @@
+[project]
+name = "edan-chat"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "Dah Bébé Samuel", email = "bebesamueldah6@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "duckdb>=1.5.6",
+    "httpx>=0.28.1",
+    "pandas>=3.0.6",
+    "pdfplumber>=0.11.10",
+    "plotly>=7.1.0",
+    "pyarrow>=25.0.1",
+    "python-dotenv>=1.2.4",
+    "rapidfuzz>=3.14.6",
+    "sqlglot>=30.21.0",
+    "streamlit>=1.65.0",
+]
+
+[project.scripts]
+edan-chat = "edan_chat:main"
+
+[build-system]
+requires = ["uv_build>=0.12.22,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.10",
+]
