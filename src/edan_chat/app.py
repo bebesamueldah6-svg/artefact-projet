@@ -11,8 +11,9 @@ import plotly.express as px
 import streamlit as st
 
 from edan_chat import config
-from edan_chat.agent import Agent, Session, Turn
+from edan_chat.agent import Agent, Session, Turn, speech
 from edan_chat.ui import components as ui
+from edan_chat.ui.dashboard import render_dashboard
 
 EXAMPLES = {
     "📊 Analyses": [
@@ -114,6 +115,30 @@ def render(turn: Turn, idx: int) -> None:
     ui.meta_badges(turn)
 
 
+def voice_input() -> str | None:
+    """Microphone recorder -> Whisper transcription -> question (each recording is used once)."""
+    if not speech.available():
+        st.caption("🎤 Recherche vocale : ajoutez `GROQ_API_KEY` dans `.env` pour l'activer.")
+        return None
+    st.session_state.setdefault("voice_key", 0)
+    audio = st.audio_input("🎤 Posez votre question à voix haute (cliquez sur le micro, parlez, puis arrêtez)",
+                           key=f"voice-{st.session_state.voice_key}")
+    if audio is None:
+        return None
+    with st.spinner("Transcription de votre question…"):
+        try:
+            text = speech.transcribe(audio.getvalue(), audio.name or "question.wav", audio.type or "audio/wav")
+        except speech.STTError as e:
+            st.error(str(e))
+            return None
+    st.session_state.voice_key += 1  # new widget next run: the same recording is never resent
+    if not text:
+        st.warning("Je n'ai rien entendu, réessayez en parlant plus près du micro.")
+        return None
+    st.toast(f"🎤 « {text} »")
+    return text
+
+
 # ---- sidebar ---------------------------------------------------------------------------------
 st.session_state.setdefault("session", Session())
 m = manifest()
@@ -136,20 +161,27 @@ with st.sidebar:
 session: Session = st.session_state.session
 ui.hero()
 ui.ticker()
-if not session.history:
-    ui.kpis()
+tab_chat, tab_dash = st.tabs(["💬 Chat", "📊 Tableau de bord interactif"])
 
-for i, past in enumerate(session.history):
-    with st.chat_message("user"):
-        st.markdown(past.question)
-    with st.chat_message("assistant"):
-        render(past, i)
+with tab_dash:
+    render_dashboard()
 
-question = st.chat_input("Posez votre question… / Ask about the results…") or st.session_state.pop("pending_q", None)
-if question:
-    with st.chat_message("user"):
-        st.markdown(question)
-    with st.chat_message("assistant"), st.spinner("Analyse du PDF en cours…"):
-        get_agent().ask(question, session)
-    st.session_state.animate = len(session.history) - 1
-    st.rerun()
+with tab_chat:
+    if not session.history:
+        ui.kpis()
+    for i, past in enumerate(session.history):
+        with st.chat_message("user"):
+            st.markdown(past.question)
+        with st.chat_message("assistant"):
+            render(past, i)
+
+    voice_question = voice_input()
+    question = (st.chat_input("Posez votre question… / Ask about the results…")
+                or voice_question or st.session_state.pop("pending_q", None))
+    if question:
+        with st.chat_message("user"):
+            st.markdown(question)
+        with st.chat_message("assistant"), st.spinner("Analyse du PDF en cours…"):
+            get_agent().ask(question, session)
+        st.session_state.animate = len(session.history) - 1
+        st.rerun()

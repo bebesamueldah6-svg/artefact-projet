@@ -35,6 +35,11 @@ LLM_MODEL = os.getenv("LLM_MODEL", _model)
 LLM_API_KEY = os.getenv("LLM_API_KEY") or (os.getenv(_key_env, "") if _key_env else "")
 LLM_TIMEOUT_S = float(os.getenv("LLM_TIMEOUT_S", "60"))
 
+# Speech-to-text for voice questions (Whisper, OpenAI-compatible; Groq by default)
+STT_BASE_URL = os.getenv("STT_BASE_URL", "https://api.groq.com/openai/v1")
+STT_MODEL = os.getenv("STT_MODEL", "whisper-large-v3-turbo")
+STT_API_KEY = os.getenv("STT_API_KEY") or os.getenv("GROQ_API_KEY", "")
+
 # SQL guardrails
 SQL_MAX_ROWS = int(os.getenv("SQL_MAX_ROWS", "300"))
 SQL_TIMEOUT_S = float(os.getenv("SQL_TIMEOUT_S", "5"))

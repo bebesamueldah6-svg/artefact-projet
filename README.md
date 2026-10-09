@@ -24,6 +24,15 @@ uv run streamlit run src/edan_chat/app.py
 
 `uv run edan-chat` gives the same agent in the terminal.
 
+The web app has two tabs:
+
+- **💬 Chat** — type or **speak** your question (🎤 microphone, transcribed by Whisper on Groq with the
+  same key), get the answer with table, SQL, sources, chart and the route badge.
+- **📊 Interactive dashboard** — filters (regions, winning party, turnout range) with live KPIs; seats by
+  party (bars / donut); turnout by region (**click a bar** to focus the scatter); turnout × winner score
+  scatter (**click or lasso points** to open the detailed results of those constituencies); searchable
+  table.
+
 ### LLM configuration (`.env`)
 
 | `LLM_PROVIDER` | Key | Default model | Notes |
@@ -63,6 +72,8 @@ question ─▶ safety ─▶ entities ─▶ disambiguation ─▶ SQL rules �
 | SQL guard (SELECT-only, table + column allowlist, LIMIT, timeout, read-only DB) | `agent/sql_guard.py` |
 | Retrieval (BM25, typo-tolerant, provenance) | `agent/rag.py` |
 | Charts (declarative spec, rendered with Plotly) | `agent/charts.py` |
+| Voice questions (Whisper speech-to-text) | `agent/speech.py` |
+| UI theme, ticker, dashboard | `ui/style.css`, `ui/components.py`, `ui/dashboard.py` |
 | Tracing (timed spans, tokens, latency → `traces/*.jsonl`) | `agent/trace.py` |
 | Cache (LLM responses keyed by dataset version) | `agent/cache.py` |
 | Offline evaluation | `eval.py` |
