@@ -24,7 +24,7 @@ MANIFEST_PATH = PROCESSED_DIR / "manifest.json"
 # LLM provider (any OpenAI-compatible chat endpoint). "none" = deterministic paths only.
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower()  # groq | gemini | ollama | none
 _PROVIDERS = {
-    "groq": ("https://api.groq.com/openai/v1", "llama-3.3-70b-versatile", "GROQ_API_KEY"),
+    "groq": ("https://api.groq.com/openai/v1", "openai/gpt-oss-120b", "GROQ_API_KEY"),
     "gemini": ("https://generativelanguage.googleapis.com/v1beta/openai", "gemini-2.5-flash",
                "GEMINI_API_KEY"),
     "ollama": ("http://localhost:11434/v1", "qwen2.5:7b", ""),

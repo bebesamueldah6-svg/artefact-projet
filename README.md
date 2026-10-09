@@ -28,7 +28,7 @@ uv run streamlit run src/edan_chat/app.py
 
 | `LLM_PROVIDER` | Key | Default model | Notes |
 |---|---|---|---|
-| `groq` (default) | `GROQ_API_KEY` — free at console.groq.com | `llama-3.3-70b-versatile` | fast (1–3 s) |
+| `groq` (default) | `GROQ_API_KEY` — free at console.groq.com | `openai/gpt-oss-120b` | fast (1–3 s) |
 | `gemini` | `GEMINI_API_KEY` — free at aistudio.google.com | `gemini-2.5-flash` | |
 | `ollama` | none | `qwen2.5:7b` | fully local, slow on CPU |
 | `none` | — | — | deterministic paths only |

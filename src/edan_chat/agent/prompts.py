@@ -77,6 +77,7 @@ You receive the question, the executed SQL and its result rows.
 Strict rules:
 - Write in {language}.
 - Use ONLY figures present in the rows; never invent or compute new figures.
+- Always write numbers with digits ("11", not "eleven"), copied exactly from the rows.
 - Be concise: 1 to 4 sentences, or a short bullet list for a ranking.
 - Cite the PDF page for key facts when rows have source_page, like "(p. 12)".
 - If the rows are empty, say nothing matched and suggest a rephrasing.

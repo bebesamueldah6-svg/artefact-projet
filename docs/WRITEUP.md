@@ -123,8 +123,10 @@ fully on the supported questions when no key is configured.
     cited pages must belong to those rows.
   - Output: a Markdown table per category and the failures with their trace ids.
   - The deterministic subset runs in CI and as a pytest regression test.
-- **Results.** Deterministic paths: **45/45**, every answer grounded, p50 latency about 25 ms. Results
-  with the LLM path are in `reports/eval_report.md`.
+- **Results** (`reports/eval_report.md`, Groq `openai/gpt-oss-120b`): **50/50 cases**, 37/37 answers
+  grounded, p50 latency 18 ms (deterministic paths). LLM text-to-SQL answers take about 0.5–2 s.
+  Without an LLM, the deterministic subset scores 45/45. The LLM's free-form answers were also checked
+  against independent SQL; for example, the average first–second margin of 26.05 points matches.
 
 ## 6. Known limitations
 
