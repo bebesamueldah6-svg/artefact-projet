@@ -53,7 +53,7 @@ USERS_DB_PATH = Path(os.getenv("USERS_DB_PATH", str(DATA_DIR / "users.db")))
 SMTP_HOST = os.getenv("SMTP_HOST", "")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER", "")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "").replace(" ", "")  # Google shows app passwords in groups of 4
 SMTP_FROM = os.getenv("SMTP_FROM", "")
 SESSION_TTL_S = int(os.getenv("SESSION_TTL_S", str(8 * 3600)))
 
