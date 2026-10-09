@@ -81,6 +81,21 @@ header[data-testid="stHeader"] { background: transparent; }
 .kpi.orange { border-top: 4px solid var(--ci-orange); }
 .kpi.green  { border-top: 4px solid var(--ci-green); }
 
+/* clickable KPI cards: an invisible Streamlit button covers the whole card */
+[class*="st-key-kpicard"] { position: relative; }
+[class*="st-key-kpicard"] .kpi { margin: 0; height: 100%; cursor: pointer; }
+[class*="st-key-kpicard"] .stButton { position: absolute; inset: 0; z-index: 5; margin: 0; }
+[class*="st-key-kpicard"] .stButton button {
+  width: 100%; height: 100%; opacity: 0; cursor: pointer; transform: none !important; box-shadow: none !important;
+}
+[class*="st-key-kpicard"]:hover .kpi { transform: translateY(-4px); box-shadow: var(--shadow); border-color: #FAD7B0; }
+[class*="st-key-kpicard"]:active .kpi { transform: translateY(-1px) scale(.98); }
+.kpi .hint {
+  margin-top: 8px; font-size: .72rem; font-weight: 700; color: var(--ci-orange-dark);
+  opacity: 0; transform: translateY(4px); transition: all .2s ease;
+}
+[class*="st-key-kpicard"]:hover .hint { opacity: 1; transform: none; }
+
 /* ---- chat ------------------------------------------------------------------------------------ */
 [data-testid="stChatMessage"] {
   background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px;

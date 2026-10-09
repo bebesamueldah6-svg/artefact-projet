@@ -68,19 +68,27 @@ def ticker() -> None:
         unsafe_allow_html=True)
 
 
-def kpis() -> None:
+def kpis() -> str | None:
+    """Clickable key-figure cards. Returns the question to ask when a card is clicked."""
     f = key_figures()
     nat, top = f["nat"], f["seats"].iloc[0]
-    cards = [
-        ("orange", "205", "sièges à pourvoir"),
-        ("green", f"{_fr(nat.taux_participation, 2)} %", "participation"),
-        ("orange", _fr(nat.votants), "votants"),
-        ("green", f"{int(top.nb_elus)}", f"sièges {html.escape(top.party)}"),
-        ("orange", str(len(f["seats"])), "partis représentés"),
+    cards = [  # (colour, value, label, question asked on click)
+        ("orange", "205", "sièges à pourvoir", "Graphique des sièges par parti"),
+        ("green", f"{_fr(nat.taux_participation, 2)} %", "participation",
+         "Graphique de la participation par région"),
+        ("orange", _fr(nat.votants), "votants", "Quel est le taux de participation national ?"),
+        ("green", f"{int(top.nb_elus)}", f"sièges {html.escape(top.party)}",
+         f"Combien de sièges a obtenu le {top.party} ?"),
+        ("orange", str(len(f["seats"])), "partis représentés", "Camembert des sièges par parti"),
     ]
-    st.markdown('<div class="kpis">' + "".join(
-        f'<div class="kpi {c}"><div class="v">{v}</div><div class="l">{label}</div></div>' for c, v, label in cards)
-        + "</div>", unsafe_allow_html=True)
+    clicked = None
+    for i, (col, (color, value, label, question)) in enumerate(zip(st.columns(len(cards)), cards, strict=True)):
+        with col, st.container(key=f"kpicard_{i}"):
+            st.markdown(f'<div class="kpi {color}"><div class="v">{value}</div><div class="l">{label}</div>'
+                        f'<div class="hint">▶ voir le détail</div></div>', unsafe_allow_html=True)
+            if st.button(label, key=f"kpiclick_{i}", help=question):
+                clicked = question
+    return clicked
 
 
 ROUTE_LABELS = {"sql_rules": "⚡ SQL règles", "sql_llm": "🤖 SQL généré par LLM", "rag": "🔎 recherche RAG",

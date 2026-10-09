@@ -115,23 +115,23 @@ def render(turn: Turn, idx: int) -> None:
     ui.meta_badges(turn)
 
 
-def voice_input() -> str | None:
-    """Microphone recorder -> Whisper transcription -> question (each recording is used once)."""
-    if not speech.available():
-        st.caption("🎤 Recherche vocale : ajoutez `GROQ_API_KEY` dans `.env` pour l'activer.")
+def read_chat_input() -> str | None:
+    """Chat box with a built-in microphone: typed text, or a recording transcribed by Whisper."""
+    voice = speech.available()
+    value = st.chat_input("Écrivez ou cliquez sur 🎤 pour parler… / Type or speak…", accept_audio=voice)
+    if value is None or isinstance(value, str):
+        return value
+    if value.text:
+        return value.text
+    if value.audio is None:
         return None
-    st.session_state.setdefault("voice_key", 0)
-    audio = st.audio_input("🎤 Posez votre question à voix haute (cliquez sur le micro, parlez, puis arrêtez)",
-                           key=f"voice-{st.session_state.voice_key}")
-    if audio is None:
-        return None
-    with st.spinner("Transcription de votre question…"):
+    with st.spinner("🎤 Transcription de votre question…"):
         try:
-            text = speech.transcribe(audio.getvalue(), audio.name or "question.wav", audio.type or "audio/wav")
+            text = speech.transcribe(value.audio.getvalue(), value.audio.name or "question.wav",
+                                     value.audio.type or "audio/wav")
         except speech.STTError as e:
             st.error(str(e))
             return None
-    st.session_state.voice_key += 1  # new widget next run: the same recording is never resent
     if not text:
         st.warning("Je n'ai rien entendu, réessayez en parlant plus près du micro.")
         return None
@@ -167,17 +167,16 @@ with tab_dash:
     render_dashboard()
 
 with tab_chat:
-    if not session.history:
-        ui.kpis()
+    clicked = ui.kpis()  # clickable key figures: each card asks its question
     for i, past in enumerate(session.history):
         with st.chat_message("user"):
             st.markdown(past.question)
         with st.chat_message("assistant"):
             render(past, i)
 
-    voice_question = voice_input()
-    question = (st.chat_input("Posez votre question… / Ask about the results…")
-                or voice_question or st.session_state.pop("pending_q", None))
+    if not speech.available():
+        st.caption("🎤 Recherche vocale : ajoutez `GROQ_API_KEY` dans `.env` pour l'activer.")
+    question = read_chat_input() or clicked or st.session_state.pop("pending_q", None)
     if question:
         with st.chat_message("user"):
             st.markdown(question)
