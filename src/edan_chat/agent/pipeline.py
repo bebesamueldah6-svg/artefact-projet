@@ -83,15 +83,22 @@ class Agent:
             sql = plan.get("sql") or ""
             try:
                 result = execute(sql, self.db_path)
-                turn.attempts.append({"sql": sql, "error": None})
-                break
             except (UnsafeSQLError, duckdb.Error) as e:  # error is fed back for repair
+                feedback = f"Cette requête a échoué : {e}\nCorrige-la."
                 turn.attempts.append({"sql": sql, "error": str(e)})
-                messages += [
-                    {"role": "assistant", "content": json.dumps(plan, ensure_ascii=False)},
-                    {"role": "user", "content": f"Cette requête a échoué : {e}\nCorrige-la. "
-                                                "Réponds uniquement avec le JSON."},
-                ]
+            else:
+                # an empty result with known entities usually means an invented filter
+                if not result.df.empty or not turn.hints or attempt == MAX_REPAIRS:
+                    turn.attempts.append({"sql": sql, "error": None})
+                    break
+                feedback = ("Cette requête ne renvoie aucune ligne : un filtre est sans doute faux. "
+                            "Réécris-la en utilisant uniquement les indices :\n"
+                            + "\n".join(f"- {h}" for h in turn.hints))
+                turn.attempts.append({"sql": sql, "error": "0 ligne"})
+            messages += [
+                {"role": "assistant", "content": json.dumps(plan, ensure_ascii=False)},
+                {"role": "user", "content": feedback + "\nRéponds uniquement avec le JSON."},
+            ]
         if result is None:
             turn.kind = "error"
             turn.text = ("Je n'ai pas réussi à construire une requête valide pour cette question. "

@@ -41,6 +41,13 @@ def test_guard_rejects(sql):
         validate(sql)
 
 
+def test_guard_strips_llm_debris():
+    # seen with qwen2.5:7b: a JSON brace leaking into the SQL string
+    assert validate("SELECT * FROM vw_winners WHERE circ_id = '047'}").startswith(
+        "SELECT * FROM vw_winners WHERE circ_id = '047'")
+    assert validate("```sql\nSELECT * FROM vw_winners;\n```").startswith("SELECT * FROM vw_winners")
+
+
 def test_guard_caps_rows():
     assert validate("SELECT * FROM vw_results_clean").endswith(f"LIMIT {config.SQL_MAX_ROWS + 1}")
     assert validate("SELECT * FROM vw_winners LIMIT 5").endswith("LIMIT 5")
@@ -87,6 +94,20 @@ def test_repairs_bad_sql(tmp_path):
     assert turn.kind == "answer"
     assert [a["error"] is None for a in turn.attempts] == [False, True]
     assert turn.df.iloc[0]["party"] == "RHDP"
+
+
+def test_retries_empty_result_with_hints(tmp_path):
+    llm = FakeLLM(
+        # qwen2.5:7b invented region = 'BOUAKE' (no such region) despite the circ_id hint
+        {"action": "sql", "sql": "SELECT circonscription, taux_participation FROM vw_turnout "
+                                 "WHERE region = 'BOUAKE'"},
+        {"action": "sql", "sql": "SELECT circonscription, taux_participation FROM vw_turnout "
+                                 "WHERE circ_id IN ('060', '061')"},
+        "Participation à Bouaké ...",
+    )
+    turn = Agent(llm, trace_dir=tmp_path).ask("Taux de participation à Bouaké ?")
+    assert [a["error"] for a in turn.attempts] == ["0 ligne", None]
+    assert len(turn.df) == 2 and "circ_id IN ('060', '061')" in llm.calls[1][-1]["content"]
 
 
 def test_gives_up_after_repairs(tmp_path):

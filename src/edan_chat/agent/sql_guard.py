@@ -10,6 +10,7 @@ Defense in depth:
 
 from __future__ import annotations
 
+import re
 import threading
 from dataclasses import dataclass
 
@@ -47,13 +48,15 @@ class QueryResult:
 
 def validate(sql: str, max_rows: int = config.SQL_MAX_ROWS) -> str:
     """Return a safe, row-capped version of `sql` or raise UnsafeSQLError."""
-    sql = sql.strip().rstrip(";").strip()
+    # small LLMs sometimes leave JSON / markdown debris around the query
+    sql = sql.strip().removeprefix("```sql").strip("`").strip().rstrip(";}").strip()
     if not sql:
         raise UnsafeSQLError("Requête vide.")
     try:
         statements = sqlglot.parse(sql, read="duckdb")
     except sqlglot.errors.ParseError as e:
-        raise UnsafeSQLError(f"SQL invalide : {e}") from e
+        msg = re.sub(r"\x1b\[[0-9;]*m", "", str(e))  # drop terminal colour codes
+        raise UnsafeSQLError(f"SQL invalide : {msg}") from e
     statements = [s for s in statements if s is not None]
     if len(statements) != 1:
         raise UnsafeSQLError("Une seule requête SELECT est autorisée.")
