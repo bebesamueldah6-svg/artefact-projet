@@ -7,17 +7,21 @@ avec le tableau et la requête SQL qui l'ont produite.
 > « Qui a gagné à Yopougon ? » · « Combien de sièges pour le PDCI ? » ·
 > « Quelle région a la plus forte participation ? »
 
-Tout tourne en local : les données sont dans DuckDB et le modèle de langage (Ollama) est sur
-votre machine. Aucune donnée ne quitte l'ordinateur.
+Tout tourne en local et aucune donnée ne quitte l'ordinateur. Deux moteurs de réponse :
+
+| Moteur | Réglage | Vitesse | Couverture |
+|---|---|---|---|
+| **Règles fixes** (par défaut) | `ENGINE=rules` | < 0,1 s | questions types (voir ci-dessous) |
+| Modèle de langage local (Ollama) | `ENGINE=llm` | 20–45 s sur CPU | questions libres |
 
 ## Installation
 
-Prérequis : [uv](https://docs.astral.sh/uv/) et [Ollama](https://ollama.com).
+Prérequis : [uv](https://docs.astral.sh/uv/). [Ollama](https://ollama.com) seulement pour `ENGINE=llm`.
 
 ```bash
 uv sync
-ollama pull qwen2.5:7b                 # ~4,7 Go (ou qwen2.5:3b, plus léger)
 uv run python -m edan_chat.ingest      # télécharge le PDF, construit la base, vérifie
+ollama pull qwen2.5:7b                 # optionnel, ~4,7 Go, uniquement pour ENGINE=llm
 ```
 
 ## Utilisation
@@ -30,7 +34,30 @@ uv run edan-chat                            # chat dans le terminal
 Configuration par variables d'environnement ou fichier `.env` (voir `src/edan_chat/config.py`) :
 `LLM_MODEL`, `OLLAMA_HOST`, `SQL_MAX_ROWS`, `SQL_TIMEOUT_S`…
 
-## Fonctionnement
+## Questions comprises par le moteur à règles
+
+Le moteur reconnaît le type de question par mots-clés et les lieux / partis / candidats par
+correspondance approchée (fautes et accents tolérés), puis exécute une requête SQL prédéfinie.
+
+| Type | Exemples |
+|---|---|
+| Sièges par parti | « Combien de sièges a obtenu chaque parti ? » |
+| Un parti | « Combien de sièges pour le FPI ? » · « Combien d'indépendants ont été élus ? » |
+| Parti dans une zone | « Combien de sièges pour le RHDP dans le Poro ? » |
+| Élu d'une circonscription | « Qui a gagné à Yopougon ? » |
+| Résultats détaillés | « Résultats à Cocody » |
+| Élus d'une région | « Qui a gagné dans la région du Poro ? » |
+| Participation | « Taux de participation national » · « Participation à Bouaké » |
+| Classements | « Les 5 circonscriptions avec la plus faible participation » · « Participation par région » |
+| Candidat | « Score de Koffi Aka Charles » |
+| Meilleurs scores | « Quel élu a obtenu le meilleur pourcentage ? » |
+| Suivi de conversation | « Résultats à Cocody » puis « et à Abobo ? » |
+
+Les questions hors périmètre (autres élections, prévisions) et les demandes de modification
+sont refusées ; une question non reconnue reçoit une aide avec des exemples.
+Ajouter un type de question = ajouter une fonction `i_...` dans `agent/rules.py`.
+
+## Fonctionnement du mode LLM (`ENGINE=llm`)
 
 ```
 PDF CEI ──ingest──▶ DuckDB (205 circonscriptions, 1 125 candidatures) + 9 contrôles de cohérence
@@ -61,15 +88,18 @@ question ─▶ entités ─▶ LLM : SQL ─▶ garde-fou ─▶ exécution ─
 ## Qualité
 
 ```bash
-uv run pytest                          # tests sans LLM (faux modèle scripté)
-uv run python -m edan_chat.eval        # évaluation de bout en bout avec le vrai modèle
+uv run pytest                          # tests unitaires (dont les 20 questions sur le moteur à règles)
+uv run python -m edan_chat.eval        # évaluation du moteur configuré (ENGINE)
 ```
 
-L'évaluation pose 14 questions (chiffres nationaux, lieux avec fautes, classements, questions
+Résultats : moteur à règles 20/20 ; qwen2.5:7b 13/14 sur la première série.
+L'évaluation pose 20 questions (chiffres nationaux, lieux avec fautes, classements, questions
 hors sujet, tentative de suppression) dont les réponses attendues ont été calculées dans la base.
 
 ## Limites
 
+- Moteur à règles : seules les formulations prévues sont comprises ; une question inhabituelle
+  reçoit le message d'aide plutôt qu'une réponse.
 - Le modèle local peut mal interpréter une question formulée de façon inhabituelle : vérifiez
   le tableau et le SQL affichés sous chaque réponse.
 - Seules les données du PDF national détaillé sont disponibles (pas de résultats par bureau

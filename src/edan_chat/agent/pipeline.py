@@ -1,4 +1,4 @@
-"""Question -> entity hints -> SQL (LLM) -> guard + execute (with one repair round) -> answer (LLM).
+"""LLM engine (ENGINE=llm). Question -> entity hints -> SQL (LLM) -> guard + execute (with one repair round) -> answer (LLM).
 
 Every turn is traced as one JSON line in TRACE_DIR for auditability.
 """
@@ -53,7 +53,7 @@ class Agent:
         except LLMError as e:
             turn.kind, turn.text = "error", str(e)
         turn.elapsed_s = round(time.perf_counter() - t0, 2)
-        self._trace(turn)
+        write_trace(turn, self.trace_dir, getattr(self.llm, "model", type(self.llm).__name__))
         return turn
 
     # ---- steps --------------------------------------------------------------------------
@@ -124,14 +124,14 @@ class Agent:
             {"role": "user", "content": json.dumps(payload, ensure_ascii=False, default=str)},
         ]).strip()
 
-    def _trace(self, turn: Turn) -> None:
-        self.trace_dir.mkdir(parents=True, exist_ok=True)
-        record = asdict(turn)
-        record["df"] = None if turn.df is None else {"rows": len(turn.df),
-                                                     "columns": list(turn.df.columns)}
-        now = datetime.now(UTC)
-        record.update(id=uuid.uuid4().hex, ts=now.isoformat(),
-                      model=getattr(self.llm, "model", type(self.llm).__name__))
-        day = now.strftime("%Y-%m-%d")
-        with open(self.trace_dir / f"{day}.jsonl", "a", encoding="utf-8") as f:
-            f.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")
+
+def write_trace(turn: Turn, trace_dir, model: str) -> None:
+    """Append one JSON line per turn to TRACE_DIR/YYYY-MM-DD.jsonl."""
+    trace_dir.mkdir(parents=True, exist_ok=True)
+    record = asdict(turn)
+    record["df"] = None if turn.df is None else {"rows": len(turn.df),
+                                                 "columns": list(turn.df.columns)}
+    now = datetime.now(UTC)
+    record.update(id=uuid.uuid4().hex, ts=now.isoformat(), model=model)
+    with open(trace_dir / f"{now:%Y-%m-%d}.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")

@@ -21,7 +21,10 @@ PDF_PATH = RAW_DIR / "EDAN_2025_RESULTAT_NATIONAL_DETAILS.pdf"
 DB_PATH = PROCESSED_DIR / "edan.duckdb"
 MANIFEST_PATH = PROCESSED_DIR / "manifest.json"
 
-# LLM (Ollama, local)
+# Answer engine: "rules" (instant, no LLM) or "llm" (Ollama)
+ENGINE = os.getenv("ENGINE", "rules")
+
+# LLM (Ollama, local) - only used when ENGINE=llm
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 LLM_MODEL = os.getenv("LLM_MODEL", "qwen2.5:7b")
 EMBED_MODEL = os.getenv("EMBED_MODEL", "nomic-embed-text")

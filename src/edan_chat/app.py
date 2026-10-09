@@ -9,8 +9,8 @@ import plotly.express as px
 import streamlit as st
 
 from edan_chat import config
-from edan_chat.agent.llm import OllamaChat
-from edan_chat.agent.pipeline import Agent, Turn
+from edan_chat.agent import make_agent
+from edan_chat.agent.pipeline import Turn
 
 EXAMPLES = [
     "Combien de sièges a obtenu chaque parti ?",
@@ -18,14 +18,16 @@ EXAMPLES = [
     "Quelles sont les 10 circonscriptions avec la plus forte participation ?",
     "Taux de participation par région",
     "Combien d'indépendants ont été élus ?",
+    "Résultats à Cocody",
+    "Combien de sièges pour le PDCI dans le Poro ?",
 ]
 
 st.set_page_config(page_title="EDAN 2025 — Résultats des législatives", page_icon="🗳️", layout="wide")
 
 
 @st.cache_resource
-def get_agent() -> Agent:
-    return Agent()
+def get_agent():
+    return make_agent()
 
 
 def manifest() -> dict:
@@ -58,14 +60,14 @@ def render(turn: Turn) -> None:
         return
     fig = chart(turn.df)
     if fig is not None:
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     with st.expander(f"Données ({len(turn.df)} lignes{', tronquées' if turn.truncated else ''})"
                      + (f" — PDF p. {', '.join(map(str, turn.source_pages[:10]))}" if turn.source_pages else "")):
-        st.dataframe(turn.df, use_container_width=True, hide_index=True)
+        st.dataframe(turn.df, width="stretch", hide_index=True)
         st.code(turn.sql, language="sql")
         if len(turn.attempts) > 1:
             st.caption(f"Requête corrigée après {len(turn.attempts) - 1} erreur(s).")
-        st.caption(f"{turn.elapsed_s:.1f} s")
+        st.caption(f"{turn.elapsed_s:.2f} s")
 
 
 # ---- sidebar ---------------------------------------------------------------------------------
@@ -78,15 +80,20 @@ with st.sidebar:
         ok = all(v["passed"] for v in m["validation"].values())
         st.caption(f"Données : `{m['pdf_file']}` · version `{m['dataset_version']}` · "
                    f"{'✅ contrôles de cohérence OK' if ok else '❌ contrôles en échec'}")
-    llm = OllamaChat()
-    if llm.available():
-        st.success(f"Modèle local : {llm.model}")
+    if config.ENGINE == "llm":
+        from edan_chat.agent.llm import OllamaChat
+
+        llm = OllamaChat()
+        if llm.available():
+            st.success(f"Modèle local : {llm.model}")
+        else:
+            st.error(f"Modèle `{llm.model}` indisponible sur {llm.host}. "
+                     f"Lancez Ollama puis `ollama pull {llm.model}`.")
     else:
-        st.error(f"Modèle `{llm.model}` indisponible sur {llm.host}. "
-                 f"Lancez Ollama puis `ollama pull {llm.model}`.")
+        st.caption("Moteur : règles fixes (réponse instantanée, sans IA).")
     st.subheader("Exemples")
     for ex in EXAMPLES:
-        if st.button(ex, use_container_width=True):
+        if st.button(ex, width="stretch"):
             st.session_state.pending = ex
     if st.button("Effacer la conversation", type="secondary"):
         st.session_state.history = []

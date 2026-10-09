@@ -1,8 +1,8 @@
 def main() -> None:
     """Terminal chat:  `uv run edan-chat`  (the web UI is `streamlit run src/edan_chat/app.py`)."""
-    from edan_chat.agent.pipeline import Agent
+    from edan_chat.agent import make_agent
 
-    agent, history = Agent(), []
+    agent, history = make_agent(), []
     print("EDAN 2025 — posez une question (Ctrl+C pour quitter)")
     while True:
         try:
