@@ -1,107 +1,95 @@
-# edan-chat — Questions-réponses sur les législatives ivoiriennes 2025
+# edan-chat — chat with the EDAN 2025 election results
 
-Posez des questions en français sur les résultats officiels des élections législatives
-(EDAN 2025) publiés par la CEI, et obtenez une réponse chiffrée, sourcée (page du PDF),
-avec le tableau et la requête SQL qui l'ont produite.
+A minimal "chat with your data" web app over the official results of the 2025 Ivorian legislative
+elections, published by the CEI as a 35-page PDF
+([EDAN_2025_RESULTAT_NATIONAL_DETAILS.pdf](https://www.cei.ci/wp-content/uploads/2025/12/EDAN_2025_RESULTAT_NATIONAL_DETAILS.pdf)).
+Ask in **English or French**; answers come **only** from the PDF, with the table, the SQL, the PDF
+page citations and, on request, a chart.
 
-> « Qui a gagné à Yopougon ? » · « Combien de sièges pour le PDCI ? » ·
-> « Quelle région a la plus forte participation ? »
+> "How many seats did RHDP win?" · "Top 10 candidates by score in region Poro" ·
+> "Participation rate by region" · "Histogram of winners by party" · "Qui a gagné à Bouaké ?"
 
-Tout tourne en local et aucune donnée ne quitte l'ordinateur. Deux moteurs de réponse :
+Design notes, schema decisions and limitations: **[docs/WRITEUP.md](docs/WRITEUP.md)**.
 
-| Moteur | Réglage | Vitesse | Couverture |
-|---|---|---|---|
-| **Règles fixes** (par défaut) | `ENGINE=rules` | < 0,1 s | questions types (voir ci-dessous) |
-| Modèle de langage local (Ollama) | `ENGINE=llm` | 20–45 s sur CPU | questions libres |
+## Quick start
 
-## Installation
-
-Prérequis : [uv](https://docs.astral.sh/uv/). [Ollama](https://ollama.com) seulement pour `ENGINE=llm`.
+Requires [uv](https://docs.astral.sh/uv/) (Python 3.12 is installed automatically).
 
 ```bash
 uv sync
-uv run python -m edan_chat.ingest      # télécharge le PDF, construit la base, vérifie
-ollama pull qwen2.5:7b                 # optionnel, ~4,7 Go, uniquement pour ENGINE=llm
+cp .env.example .env                  # optional: add a free Groq or Gemini key (see below)
+uv run python -m edan_chat.ingest     # PDF -> parse -> Parquet/CSV + DuckDB -> 9 consistency checks
+uv run streamlit run src/edan_chat/app.py
 ```
 
-## Utilisation
+`uv run edan-chat` gives the same agent in the terminal.
 
-```bash
-uv run streamlit run src/edan_chat/app.py   # interface web (graphiques, tableaux, SQL)
-uv run edan-chat                            # chat dans le terminal
+### LLM configuration (`.env`)
+
+| `LLM_PROVIDER` | Key | Default model | Notes |
+|---|---|---|---|
+| `groq` (default) | `GROQ_API_KEY` — free at console.groq.com | `llama-3.3-70b-versatile` | fast (1–3 s) |
+| `gemini` | `GEMINI_API_KEY` — free at aistudio.google.com | `gemini-2.5-flash` | |
+| `ollama` | none | `qwen2.5:7b` | fully local, slow on CPU |
+| `none` | — | — | deterministic paths only |
+
+Any OpenAI-compatible endpoint works through `LLM_BASE_URL` / `LLM_MODEL`. **Without a key the app
+still works**: the supported question types (all acceptance questions of the brief) are answered by
+the deterministic SQL path; only free-form analytics need the LLM.
+
+## How it works
+
+```
+PDF ──ingest──▶ circonscriptions (205) + candidatures (1,125) + national_totals ──▶ DuckDB + curated views
+                                         (9 arithmetic consistency checks, manifest with PDF sha256)
+
+question ─▶ safety ─▶ entities ─▶ disambiguation ─▶ SQL rules ─▶ LLM text-to-SQL ─▶ RAG ─▶ "Not found…"
+            refuse     typos,      ask the user       keyword       guard + repair     BM25 over
+            unsafe     aliases,    (Bouaké, Abidjan)  intents       + grounded answer  row-as-text
+            requests   memory                         (instant)                        chunks, cited
 ```
 
-Configuration par variables d'environnement ou fichier `.env` (voir `src/edan_chat/config.py`) :
-`LLM_MODEL`, `OLLAMA_HOST`, `SQL_MAX_ROWS`, `SQL_TIMEOUT_S`…
-
-## Questions comprises par le moteur à règles
-
-Le moteur reconnaît le type de question par mots-clés et les lieux / partis / candidats par
-correspondance approchée (fautes et accents tolérés), puis exécute une requête SQL prédéfinie.
-
-| Type | Exemples |
+| Step | Module |
 |---|---|
-| Sièges par parti | « Combien de sièges a obtenu chaque parti ? » |
-| Un parti | « Combien de sièges pour le FPI ? » · « Combien d'indépendants ont été élus ? » |
-| Parti dans une zone | « Combien de sièges pour le RHDP dans le Poro ? » |
-| Élu d'une circonscription | « Qui a gagné à Yopougon ? » |
-| Résultats détaillés | « Résultats à Cocody » |
-| Élus d'une région | « Qui a gagné dans la région du Poro ? » |
-| Participation | « Taux de participation national » · « Participation à Bouaké » |
-| Classements | « Les 5 circonscriptions avec la plus faible participation » · « Participation par région » |
-| Candidat | « Score de Koffi Aka Charles » |
-| Meilleurs scores | « Quel élu a obtenu le meilleur pourcentage ? » |
-| Suivi de conversation | « Résultats à Cocody » puis « et à Abobo ? » |
+| PDF parsing (geometry-based, handles headers/footers, page breaks, rotated region labels) | `ingest/parse_pdf.py` |
+| Normalization (accents, casing, party keys, locality splitting) | `ingest/normalize.py` |
+| Schema, curated views, manifest | `ingest/build_db.py` |
+| Consistency checks | `ingest/validate.py` |
+| Router (orchestration, non-answer policy, clarification, session memory) | `agent/router.py` |
+| Input guardrails (destructive, prompt injection, exfiltration, out of scope) | `agent/safety.py` |
+| Entity resolution (fuzzy, aliases, ambiguity detection) | `agent/entities.py` |
+| Deterministic SQL intents (FR/EN templates) | `agent/intents.py` |
+| LLM text-to-SQL + grounded answer | `agent/text2sql.py`, `agent/prompts.py`, `agent/llm.py` |
+| SQL guard (SELECT-only, table + column allowlist, LIMIT, timeout, read-only DB) | `agent/sql_guard.py` |
+| Retrieval (BM25, typo-tolerant, provenance) | `agent/rag.py` |
+| Charts (declarative spec, rendered with Plotly) | `agent/charts.py` |
+| Tracing (timed spans, tokens, latency → `traces/*.jsonl`) | `agent/trace.py` |
+| Cache (LLM responses keyed by dataset version) | `agent/cache.py` |
+| Offline evaluation | `eval.py` |
 
-Les questions hors périmètre (autres élections, prévisions) et les demandes de modification
-sont refusées ; une question non reconnue reçoit une aide avec des exemples.
-Ajouter un type de question = ajouter une fonction `i_...` dans `agent/rules.py`.
-
-## Fonctionnement du mode LLM (`ENGINE=llm`)
-
-```
-PDF CEI ──ingest──▶ DuckDB (205 circonscriptions, 1 125 candidatures) + 9 contrôles de cohérence
-                         ▲
-question ─▶ entités ─▶ LLM : SQL ─▶ garde-fou ─▶ exécution ─▶ LLM : réponse rédigée
-            (lieux,       (ou refus /     │  (lecture seule,      (uniquement à partir
-             candidats,    précision)     │   200 lignes, 5 s)     des résultats)
-             partis)                      └─ erreur ⇒ 1 correction automatique
-```
-
-1. **Ingestion** (`ingest/`) : extraction géométrique du PDF, normalisation des noms, export
-   Parquet/CSV/DuckDB et manifeste versionné (hash du PDF). Les contrôles vérifient
-   l'arithmétique : votants = nuls + exprimés, somme des voix = exprimés − blancs, un élu par
-   circonscription, totaux nationaux identiques à ceux du PDF, etc.
-2. **Résolution d'entités** (`agent/entities.py`) : « yopougon », « Agbovile » (faute),
-   « PDCI » sont reliés aux identifiants de la base par correspondance approchée, et passés au
-   modèle comme indices.
-3. **Génération SQL** (`agent/prompts.py`) : le modèle ne voit que des vues documentées
-   (`vw_winners`, `vw_turnout`, `vw_party_summary`…) et peut aussi refuser une question hors
-   périmètre ou demander une précision.
-4. **Garde-fou** (`agent/sql_guard.py`) : une seule requête `SELECT`, liste blanche de vues,
-   fonctions d'accès fichiers/réseau interdites, plafond de lignes, base ouverte en lecture
-   seule sans accès externe, délai maximal.
-5. **Réponse** : rédigée à partir des seules lignes renvoyées ; l'interface affiche aussi le
-   tableau, le SQL et les pages sources du PDF.
-6. **Traçabilité** : chaque échange est enregistré dans `traces/AAAA-MM-JJ.jsonl`.
-
-## Qualité
+## Quality
 
 ```bash
-uv run pytest                          # tests unitaires (dont les 20 questions sur le moteur à règles)
-uv run python -m edan_chat.eval        # évaluation du moteur configuré (ENGINE)
+uv run pytest                                  # 36 tests, no LLM needed
+uv run python -m edan_chat.eval --no-llm       # deterministic paths: 45 cases
+uv run python -m edan_chat.eval                # + LLM text-to-SQL cases (needs a key)
 ```
 
-Résultats : moteur à règles 20/20 ; qwen2.5:7b 13/14 sur la première série.
-L'évaluation pose 20 questions (chiffres nationaux, lieux avec fautes, classements, questions
-hors sujet, tentative de suppression) dont les réponses attendues ont été calculées dans la base.
+The evaluation recomputes every expected value from the database (`truth_sql`), checks routing,
+charts, refusals, clarifications, and **grounding**: every number in an answer must appear in the
+rows returned for it, and cited pages must be pages of those rows. Reports land in `reports/`.
+CI (`.github/workflows/ci.yml`) rebuilds the dataset from the PDF, then runs lint, tests and the
+deterministic evaluation on every push.
 
-## Limites
+Latest results: see [reports/](reports/).
 
-- Moteur à règles : seules les formulations prévues sont comprises ; une question inhabituelle
-  reçoit le message d'aide plutôt qu'une réponse.
-- Le modèle local peut mal interpréter une question formulée de façon inhabituelle : vérifiez
-  le tableau et le SQL affichés sous chaque réponse.
-- Seules les données du PDF national détaillé sont disponibles (pas de résultats par bureau
-  de vote, pas d'autres scrutins).
-- `is_list` (liste vs candidat individuel) est déterminé par une heuristique sur le nom.
+## Repository layout
+
+```
+data/raw/        the CEI PDF (input)
+data/processed/  Parquet / CSV exports + manifest.json (the DuckDB file is rebuilt by ingest)
+src/edan_chat/   ingest/, agent/, app.py, eval.py, config.py
+tests/           unit + regression tests
+reports/         evaluation reports
+docs/WRITEUP.md  design write-up
+```
