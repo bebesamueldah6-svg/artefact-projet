@@ -1,0 +1,31 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - name: Rebuild the dataset from the committed PDF (parse -> DuckDB -> 9 consistency checks)
+        run: uv run python -m edan_chat.ingest
+      - run: uv run ruff check src tests
+      - name: Unit + regression tests (no LLM needed)
+        run: uv run pytest -q
+        env:
+          LLM_PROVIDER: none
+      - name: Offline evaluation, deterministic paths
+        run: uv run python -m edan_chat.eval --no-llm --report reports/eval_report_ci.md
+        env:
+          LLM_PROVIDER: none
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-report
+          path: reports/

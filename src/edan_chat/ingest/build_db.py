@@ -57,12 +57,12 @@ VIEWS_SQL = """
 CREATE VIEW vw_results_clean AS
 SELECT k.row_id, c.circ_id, c.circonscription, c.region, k.party, k.party_key,
        k.candidate, k.is_list, k.votes, k.vote_pct, k.rank_in_circ, k.is_elected,
-       k.source_page
+       k.source_page, k.excerpt
 FROM candidatures k JOIN circonscriptions c USING (circ_id);
 
 CREATE VIEW vw_winners AS
-SELECT c.circ_id, c.circonscription, c.region, k.party, k.party_key, k.candidate,
-       k.is_list, k.votes, k.vote_pct, k.source_page
+SELECT k.row_id, c.circ_id, c.circonscription, c.region, k.party, k.party_key, k.candidate,
+       k.is_list, k.votes, k.vote_pct, k.source_page, k.excerpt
 FROM candidatures k JOIN circonscriptions c USING (circ_id)
 WHERE k.is_elected;
 

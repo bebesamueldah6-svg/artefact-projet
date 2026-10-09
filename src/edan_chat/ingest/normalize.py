@@ -61,7 +61,9 @@ def short_locality(circonscription: str) -> list[str]:
 
     "GOMON ET SIKENSI, COMMUNES ET SOUS-PREFECTURES" -> ["GOMON", "SIKENSI"]
     """
-    k = norm_key(circonscription)
-    k = re.sub(r"\b(COMMUNES?|SOUS PREFECTURES?|PREFECTURES?|VILLE|ET|DE|DU|DES|LA|LE)\b", ",", k)
-    parts = [p.strip() for p in re.split(r",", k)]
-    return [p for p in parts if len(p) >= 3]
+    parts = []
+    for chunk in circonscription.split(","):  # split before norm_key, which drops commas
+        k = norm_key(chunk)
+        k = re.sub(r"\b(COMMUNES?|SOUS PREFECTURES?|PREFECTURES?|VILLE|ET|DE|DU|DES|LA|LE)\b", ",", k)
+        parts += [p.strip() for p in k.split(",")]
+    return list(dict.fromkeys(p for p in parts if len(p) >= 3))

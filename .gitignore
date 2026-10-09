@@ -15,3 +15,5 @@ scratch/
 traces/
 data/processed/*.duckdb
 data/processed/*.duckdb.wal
+
+.cache/
