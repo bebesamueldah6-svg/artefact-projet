@@ -27,12 +27,23 @@ def download(force: bool = False) -> None:
         f.write(r.read())
 
 
+def ensure_database() -> None:
+    """Build the DuckDB file if it is missing (fresh clone / cloud deployment). Raises if checks fail."""
+    if config.DB_PATH.exists():
+        return
+    if run_pipeline() != 0:
+        raise RuntimeError("Dataset consistency checks failed; see the ingestion log.")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--force-download", action="store_true")
     args = ap.parse_args()
+    return run_pipeline(args.force_download)
 
-    download(args.force_download)
+
+def run_pipeline(force_download: bool = False) -> int:
+    download(force_download)
     print("Parsing PDF ...")
     parsed = parse_pdf(config.PDF_PATH)
     for issue in parsed["issues"]:

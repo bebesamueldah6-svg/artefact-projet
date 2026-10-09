@@ -20,3 +20,6 @@ data/processed/*.duckdb.wal
 
 # user accounts (local)
 data/users.db
+
+# Streamlit secrets (cloud deployment)
+.streamlit/secrets.toml

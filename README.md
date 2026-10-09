@@ -52,6 +52,25 @@ Any OpenAI-compatible endpoint works through `LLM_BASE_URL` / `LLM_MODEL`. **Wit
 still works**: the supported question types (all acceptance questions of the brief) are answered by
 the deterministic SQL path; only free-form analytics need the LLM.
 
+## Deploy (Streamlit Community Cloud, free)
+
+1. On [share.streamlit.io](https://share.streamlit.io), sign in with GitHub and click **Create app**.
+2. Repository `bebesamueldah6-svg/artefact-projet`, branch `main`, main file `src/edan_chat/app.py`.
+   Under **Advanced settings**, pick Python **3.12** and paste the secrets (TOML):
+   ```toml
+   LLM_PROVIDER = "groq"
+   GROQ_API_KEY = "gsk_..."
+   SMTP_HOST = "smtp.gmail.com"
+   SMTP_PORT = "587"
+   SMTP_USER = "you@gmail.com"
+   SMTP_PASSWORD = "your-app-password"
+   ```
+3. Deploy. Dependencies come from `requirements.txt` (`uv export`). The DuckDB file is rebuilt from the
+   committed PDF on first start (~10 s, 9 consistency checks); every push to `main` redeploys.
+
+Note: the cloud filesystem is ephemeral, so accounts in `data/users.db` are reset when the app restarts.
+Use a hosted database for persistent accounts.
+
 ## How it works
 
 ```

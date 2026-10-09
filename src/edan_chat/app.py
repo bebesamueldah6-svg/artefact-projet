@@ -12,6 +12,7 @@ import streamlit as st
 
 from edan_chat import config
 from edan_chat.agent import Agent, Session, Turn, speech
+from edan_chat.ingest.__main__ import ensure_database
 from edan_chat.ui import components as ui
 from edan_chat.ui.auth_ui import logout, require_login
 from edan_chat.ui.dashboard import render_dashboard
@@ -41,6 +42,15 @@ EXAMPLES = {
 
 st.set_page_config(page_title="EDAN 2025 — Chat", page_icon="🗳️", layout="wide")
 ui.inject_css()
+
+
+@st.cache_resource(show_spinner="Première mise en route : construction de la base depuis le PDF…")
+def _dataset_ready() -> bool:
+    ensure_database()  # fresh clone / cloud: parse the committed PDF into DuckDB once
+    return True
+
+
+_dataset_ready()
 user = require_login() if config.AUTH_ENABLED else None  # stops here until logged in
 
 
