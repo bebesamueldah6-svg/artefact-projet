@@ -47,6 +47,16 @@ SQL_TIMEOUT_S = float(os.getenv("SQL_TIMEOUT_S", "5"))
 # Retrieval (RAG path)
 RAG_TOP_K = int(os.getenv("RAG_TOP_K", "8"))
 
+# Authentication (accounts + email one-time codes)
+AUTH_ENABLED = os.getenv("AUTH_ENABLED", "1") == "1"
+USERS_DB_PATH = Path(os.getenv("USERS_DB_PATH", str(DATA_DIR / "users.db")))
+SMTP_HOST = os.getenv("SMTP_HOST", "")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER = os.getenv("SMTP_USER", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_FROM = os.getenv("SMTP_FROM", "")
+SESSION_TTL_S = int(os.getenv("SESSION_TTL_S", str(8 * 3600)))
+
 # Observability & caching
 TRACE_DIR = ROOT / os.getenv("TRACE_DIR", "traces")
 CACHE_DIR = ROOT / os.getenv("CACHE_DIR", ".cache")

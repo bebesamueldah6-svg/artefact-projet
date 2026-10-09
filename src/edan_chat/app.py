@@ -13,6 +13,7 @@ import streamlit as st
 from edan_chat import config
 from edan_chat.agent import Agent, Session, Turn, speech
 from edan_chat.ui import components as ui
+from edan_chat.ui.auth_ui import logout, require_login
 from edan_chat.ui.dashboard import render_dashboard
 
 EXAMPLES = {
@@ -40,6 +41,7 @@ EXAMPLES = {
 
 st.set_page_config(page_title="EDAN 2025 — Chat", page_icon="🗳️", layout="wide")
 ui.inject_css()
+user = require_login() if config.AUTH_ENABLED else None  # stops here until logged in
 
 
 @st.cache_resource
@@ -156,6 +158,12 @@ with st.sidebar:
     if st.button("🔄 Nouvelle conversation", width="stretch"):
         st.session_state.session = Session()
         st.rerun()
+    if user:
+        st.caption(f"👤 Connecté : **{user.display_name}** · {user.email}")
+        if st.button("🚪 Se déconnecter", width="stretch"):
+            logout()
+            st.session_state.session = Session()
+            st.rerun()
 
 # ---- main ------------------------------------------------------------------------------------
 session: Session = st.session_state.session

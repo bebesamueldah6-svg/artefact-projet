@@ -24,6 +24,12 @@ uv run streamlit run src/edan_chat/app.py
 
 `uv run edan-chat` gives the same agent in the terminal.
 
+**Access control.** Users create an account (first name, last name, email, password) and log in with
+**two factors**: their password, then a 6-digit code sent by email (valid 10 min, single use, 5 attempts).
+Passwords are hashed with scrypt; 5 wrong passwords lock the account for 15 min; error messages do not
+reveal whether an email is registered. Accounts live in a local SQLite file (`data/users.db`, git-ignored).
+Configure SMTP in `.env` (see `.env.example`); without it, a demo mode prints the code in the terminal.
+
 The web app has two tabs:
 
 - **💬 Chat** — type or **speak** your question (🎤 microphone, transcribed by Whisper on Groq with the
@@ -73,6 +79,7 @@ question ─▶ safety ─▶ entities ─▶ disambiguation ─▶ SQL rules �
 | Retrieval (BM25, typo-tolerant, provenance) | `agent/rag.py` |
 | Charts (declarative spec, rendered with Plotly) | `agent/charts.py` |
 | Voice questions (Whisper speech-to-text) | `agent/speech.py` |
+| Accounts, password + email-code login | `auth/store.py`, `auth/mailer.py`, `ui/auth_ui.py` |
 | UI theme, ticker, dashboard | `ui/style.css`, `ui/components.py`, `ui/dashboard.py` |
 | Tracing (timed spans, tokens, latency → `traces/*.jsonl`) | `agent/trace.py` |
 | Cache (LLM responses keyed by dataset version) | `agent/cache.py` |
@@ -81,7 +88,7 @@ question ─▶ safety ─▶ entities ─▶ disambiguation ─▶ SQL rules �
 ## Quality
 
 ```bash
-uv run pytest                                  # 36 tests, no LLM needed
+uv run pytest                                  # 47 tests, no LLM needed
 uv run python -m edan_chat.eval --no-llm       # deterministic paths: 45 cases
 uv run python -m edan_chat.eval                # + LLM text-to-SQL cases (needs a key)
 ```

@@ -17,3 +17,6 @@ data/processed/*.duckdb
 data/processed/*.duckdb.wal
 
 .cache/
+
+# user accounts (local)
+data/users.db

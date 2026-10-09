@@ -109,6 +109,7 @@ fully on the supported questions when no key is configured.
 | SQL guard | sqlglot parse; exactly one SELECT/CTE; table allowlist; CTEs may not shadow base tables; column allowlist; file, environment and system functions blocked; outer LIMIT capped at 300. |
 | Execution | DuckDB opened read-only with `enable_external_access=false`, and a 5 s timeout through `interrupt()`. |
 | Output | Charts are declarative specs rendered by Plotly. **No model-generated code is ever executed.** |
+| Access | Accounts with two-factor login: a scrypt-hashed password, then a 6-digit email code (single use, valid 10 min, 5 attempts). The account locks for 15 min after 5 failed passwords. Errors are generic, and sessions expire after 8 h. |
 
 ## 5. Evaluation and observability
 
