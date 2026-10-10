@@ -106,6 +106,7 @@ def test_ui_signup_then_login_flow(tmp_path, monkeypatch):
     from edan_chat import config
     from edan_chat.auth import mailer
     monkeypatch.setattr(config, "USERS_DB_PATH", tmp_path / "users.db")
+    monkeypatch.setattr(config, "USERS_DB_URL", "")  # never touch the real accounts database
     monkeypatch.setattr(store_mod, "RESEND_COOLDOWN_S", 0)
     outbox: list[str] = []
     monkeypatch.setattr(mailer, "send_code", lambda to, name, code, purpose: outbox.append(code) or "email")

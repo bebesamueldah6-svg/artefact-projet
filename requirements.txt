@@ -96,6 +96,8 @@ pycparser==3.1 ; implementation_name != 'PyPy' and platform_python_implementatio
     # via cffi
 pydeck==0.9.3
     # via streamlit
+pymysql==1.2.3
+    # via edan-chat
 pypdfium2==5.14.0
     # via pdfplumber
 python-dateutil==2.9.0.post0
@@ -118,6 +120,8 @@ rpds-py==2026.9.1
     #   referencing
 six==1.17.0
     # via python-dateutil
+sqlalchemy==2.1.4
+    # via edan-chat
 sqlglot==30.21.0
     # via edan-chat
 starlette==1.7.0
@@ -131,6 +135,7 @@ typing-extensions==4.16.0
     #   altair
     #   anyio
     #   referencing
+    #   sqlalchemy
     #   starlette
     #   streamlit
 tzdata==2026.5 ; sys_platform == 'emscripten' or sys_platform == 'win32'

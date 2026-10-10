@@ -23,3 +23,6 @@ data/users.db
 
 # Streamlit secrets (cloud deployment)
 .streamlit/secrets.toml
+
+# local MySQL setup script (contains the generated password)
+scripts/*.local.sql

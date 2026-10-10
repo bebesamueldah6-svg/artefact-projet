@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 
 import streamlit as st
+from sqlalchemy.exc import SQLAlchemyError
 
 from edan_chat import config
 from edan_chat.auth import mailer
@@ -12,8 +13,18 @@ from edan_chat.auth.store import AuthError, User, UserStore, normalize_email
 
 
 @st.cache_resource
-def get_store() -> UserStore:
+def _store() -> UserStore:
     return UserStore()
+
+
+def get_store() -> UserStore:
+    try:
+        return _store()
+    except SQLAlchemyError as e:
+        st.error("**Base des comptes injoignable.** Si vous utilisez XAMPP, démarrez **MySQL** dans le panneau "
+                 "XAMPP, vérifiez `USERS_DB_URL` dans `.env`, puis rechargez la page.")
+        st.caption(f"Détail technique : {type(e).__name__}")
+        st.stop()
 
 
 def current_user() -> User | None:
@@ -25,6 +36,9 @@ def current_user() -> User | None:
 
 
 def logout() -> None:
+    user = st.session_state.get("auth_user")
+    if user:
+        get_store().log_logout(user.email)
     for k in ("auth_user", "auth_since", "auth_step", "auth_email", "auth_purpose", "auth_name"):
         st.session_state.pop(k, None)
 
@@ -94,6 +108,9 @@ def _signup_tab() -> None:
         p1 = st.text_input("Mot de passe", type="password", key="su_p1",
                            help="8 caractères minimum, avec des lettres et des chiffres.")
         p2 = st.text_input("Confirmer le mot de passe", type="password", key="su_p2")
+        st.caption("🔒 En créant un compte, vous acceptez que vos nom, prénom, email, connexions et questions "
+                   "soient enregistrés pour le fonctionnement et l'amélioration du service. Ils ne sont ni "
+                   "vendus ni partagés. Mot de passe stocké sous forme chiffrée (hachage scrypt).")
         ok = st.form_submit_button("Créer mon compte", type="primary", width="stretch")
     if ok:
         if p1 != p2:

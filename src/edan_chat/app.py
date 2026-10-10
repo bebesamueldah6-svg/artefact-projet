@@ -14,7 +14,7 @@ from edan_chat import config
 from edan_chat.agent import Agent, Session, Turn, speech
 from edan_chat.ingest.__main__ import ensure_database
 from edan_chat.ui import components as ui
-from edan_chat.ui.auth_ui import logout, require_login
+from edan_chat.ui.auth_ui import get_store, logout, require_login
 from edan_chat.ui.dashboard import render_dashboard
 
 EXAMPLES = {
@@ -199,6 +199,8 @@ with tab_chat:
         with st.chat_message("user"):
             st.markdown(question)
         with st.chat_message("assistant"), st.spinner("Analyse du PDF en cours…"):
-            get_agent().ask(question, session)
+            turn = get_agent().ask(question, session)
+        if user:
+            get_store().log_question(user.id, turn)  # activity log (accounts database)
         st.session_state.animate = len(session.history) - 1
         st.rerun()

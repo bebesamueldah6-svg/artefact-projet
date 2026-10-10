@@ -13,8 +13,10 @@ dependencies = [
     "pdfplumber>=0.11.10",
     "plotly>=7.1.0",
     "pyarrow>=25.0.1",
+    "pymysql>=1.2.3",
     "python-dotenv>=1.2.4",
     "rapidfuzz>=3.14.6",
+    "sqlalchemy>=2.1.4",
     "sqlglot>=30.21.0",
     "streamlit>=1.65.0",
 ]

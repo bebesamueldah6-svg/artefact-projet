@@ -50,6 +50,9 @@ RAG_TOP_K = int(os.getenv("RAG_TOP_K", "8"))
 # Authentication (accounts + email one-time codes)
 AUTH_ENABLED = os.getenv("AUTH_ENABLED", "1") == "1"
 USERS_DB_PATH = Path(os.getenv("USERS_DB_PATH", str(DATA_DIR / "users.db")))
+# SQLAlchemy URL of the accounts database; empty = SQLite file above.
+# XAMPP / MySQL: mysql+pymysql://edan_app:PASSWORD@127.0.0.1:3306/edan_chat?charset=utf8mb4
+USERS_DB_URL = os.getenv("USERS_DB_URL", "")
 SMTP_HOST = os.getenv("SMTP_HOST", "")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER", "")
