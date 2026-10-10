@@ -9,6 +9,8 @@ page citations and, on request, a chart.
 > "How many seats did RHDP win?" · "Top 10 candidates by score in region Poro" ·
 > "Participation rate by region" · "Histogram of winners by party" · "Qui a gagné à Bouaké ?"
 
+**Live demo: [https://artefact-projet-rtcmdcpujagmexaxg9jkwq.streamlit.app/](https://artefact-projet-rtcmdcpujagmexaxg9jkwq.streamlit.app/)** (create an account; the 6-digit code arrives by email).
+
 Design notes, schema decisions and limitations: **[docs/WRITEUP.md](docs/WRITEUP.md)**.
 
 ## Quick start

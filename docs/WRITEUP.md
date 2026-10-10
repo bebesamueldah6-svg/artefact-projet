@@ -1,5 +1,6 @@
 # Write-up — Challenge AI Engineer (EDAN 2025)
 
+**Live demo:** https://artefact-projet-rtcmdcpujagmexaxg9jkwq.streamlit.app/  
 **Video walkthrough:** _link to be added_
 
 ## 1. What was built
